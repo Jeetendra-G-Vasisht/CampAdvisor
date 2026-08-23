@@ -68,6 +68,34 @@ existed, backfill their embeddings instead of reseeding:
 npm run backfill:embeddings
 ```
 
+## Free hosting (Render + Atlas + Upstash)
+
+This gets the whole app live at no cost. Every account below has a
+no-credit-card free tier; you create them yourself since account signup
+needs your own email/verification.
+
+1. **MongoDB Atlas** ([mongodb.com/cloud/atlas/register](https://www.mongodb.com/cloud/atlas/register))
+   — free M0 cluster (512MB). Create a database user, add `0.0.0.0/0` to the
+   IP access list (Render's egress IPs aren't static on the free plan), and
+   copy the connection string — this is your `DB_URL`.
+2. **Upstash** ([upstash.com](https://upstash.com)) — free Redis database
+   (256MB, 10k commands/day). Copy the `rediss://...` connection string
+   (note: `rediss`, TLS) — this is your `REDIS_URL`.
+3. **Render** ([render.com](https://render.com)) — New → Blueprint → connect
+   this GitHub repo. Render reads [render.yaml](render.yaml) and creates a
+   free web service that builds straight from the `Dockerfile`. It will
+   prompt you for the env vars marked `sync: false`: paste in `DB_URL` and
+   `REDIS_URL` from steps 1–2, plus `MAPBOX_TOKEN`/`CLOUDINARY_*` if you want
+   campground creation (image upload + geocoding) to work. `SESSION_SECRET`
+   is generated for you automatically.
+4. Once deployed, seed it once so there's something to search:
+   Render's dashboard → your service → **Shell** → `npm run seed`.
+
+Caveats of the free tier: Render's free web service spins down after 15
+minutes idle, so the first request after a lull takes 30–60s (cold start +
+loading the embedding model into memory); the free plan's 512MB RAM is
+enough for the app + model but leaves little headroom.
+
 ## Docker
 
 ```bash
