@@ -1,13 +1,31 @@
 const Campground = require('../models/campground');
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
-const mapBoxToken = process.env.MAPBOX_TOKEN;
-const geocoder = mbxGeocoding({ accessToken: mapBoxToken });
 const { cloudinary } = require("../cloudinary");
+const { indexCampground, searchCampgrounds } = require('../search');
+
+let geocoder = null;
+function getGeocoder() {
+    if (!geocoder) {
+        geocoder = mbxGeocoding({ accessToken: process.env.MAPBOX_TOKEN });
+    }
+    return geocoder;
+}
 
 
 module.exports.index = async (req, res) => {
     const campgrounds = await Campground.find({}).populate('popupText');
-    res.render('campgrounds/index', { campgrounds })
+    res.render('campgrounds/index', { campgrounds, isSearch: false, searchQuery: '' })
+}
+
+module.exports.search = async (req, res) => {
+    const q = (req.query.q || '').trim();
+    if (!q) {
+        req.flash('error', 'Enter a search term, e.g. "quiet lakeside spot with a fire pit"');
+        return res.redirect('/campgrounds');
+    }
+    const results = await searchCampgrounds(q, { limit: 20 });
+    const campgrounds = results.map(r => r.campground);
+    res.render('campgrounds/index', { campgrounds, isSearch: true, searchQuery: q })
 }
 
 module.exports.renderNewForm = (req, res) => {
@@ -15,7 +33,7 @@ module.exports.renderNewForm = (req, res) => {
 }
 
 module.exports.createCampground = async (req, res, next) => {
-    const geoData = await geocoder.forwardGeocode({
+    const geoData = await getGeocoder().forwardGeocode({
         query: req.body.campground.location,
         limit: 1
     }).send()
@@ -24,7 +42,11 @@ module.exports.createCampground = async (req, res, next) => {
     campground.images = req.files.map(f => ({ url: f.path, filename: f.filename }));
     campground.author = req.user._id;
     await campground.save();
-    console.log(campground);
+    try {
+        await indexCampground(campground);
+    } catch (err) {
+        console.error('[search] failed to index new campground:', err.message);
+    }
     req.flash('success', 'Successfully made a new campground!');
     res.redirect(`/campgrounds/${campground._id}`)
 }
@@ -65,6 +87,11 @@ module.exports.updateCampground = async (req, res) => {
             await cloudinary.uploader.destroy(filename);
         }
         await campground.updateOne({ $pull: { images: { filename: { $in: req.body.deleteImages } } } })
+    }
+    try {
+        await indexCampground(campground);
+    } catch (err) {
+        console.error('[search] failed to re-index updated campground:', err.message);
     }
     req.flash('success', 'Successfully updated campground!');
     res.redirect(`/campgrounds/${campground._id}`)

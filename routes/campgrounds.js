@@ -16,6 +16,8 @@ router.route('/')
 
 router.get('/new', isLoggedIn, campgrounds.renderNewForm)
 
+router.get('/search', catchAsync(campgrounds.search))
+
 router.route('/:id')
     .get(catchAsync(campgrounds.showCampground))
     .put(isLoggedIn, isAuthor, upload.array('image'), validateCampground, catchAsync(campgrounds.updateCampground))

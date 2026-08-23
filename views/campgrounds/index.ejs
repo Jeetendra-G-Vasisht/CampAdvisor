@@ -1,7 +1,20 @@
 <% layout('layouts/boilerplate')%>
 <div id="cluster-map"></div>
 <div class="container">
+    <form class="d-flex my-4" action="/campgrounds/search" method="GET">
+        <input class="form-control me-2" type="search" name="q" value="<%= searchQuery %>"
+            placeholder="Try: quiet lakeside spot with a fire pit" aria-label="Search campgrounds">
+        <button class="btn btn-outline-success" type="submit">AI Search</button>
+    </form>
+
+    <% if (isSearch) { %>
+    <h1>Results for "<%= searchQuery %>"</h1>
+    <% if (!campgrounds.length) { %>
+    <p class="text-muted">No matching campgrounds found. Try a broader description.</p>
+    <% } %>
+    <% } else { %>
     <h1>All Campgrounds</h1>
+    <% } %>
 
     <% for (let campground of campgrounds){%>
     <div class="card mb-3">

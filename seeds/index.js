@@ -1,9 +1,14 @@
+if (process.env.NODE_ENV !== "production") {
+    require('dotenv').config();
+}
+
 const mongoose = require('mongoose');
 const cities = require('./cities');
 const { places, descriptors } = require('./seedHelpers');
 const Campground = require('../models/campground');
+const { indexCampground } = require('../search');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+mongoose.connect(process.env.DB_URL || 'mongodb://localhost:27017/yelpcamp', {
     useNewUrlParser: true,
     useCreateIndex: true,
     useUnifiedTopology: true
@@ -50,6 +55,14 @@ const seedDB = async () => {
             ]
         })
         await camp.save();
+        try {
+            await indexCampground(camp);
+        } catch (err) {
+            console.error(`[search] failed to index seed campground ${camp._id}:`, err.message);
+        }
+        if ((i + 1) % 50 === 0) {
+            console.log(`Seeded and indexed ${i + 1}/300 campgrounds`);
+        }
     }
 }
 

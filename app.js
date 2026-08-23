@@ -22,7 +22,7 @@ const userRoutes = require('./routes/users');
 const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 
-mongoose.connect('mongodb://localhost:27017/yelpcamp', {
+mongoose.connect(process.env.DB_URL || 'mongodb://localhost:27017/yelpcamp', {
     useNewUrlParser: true,
     useCreateIndex: true,
     useUnifiedTopology: true,
@@ -50,7 +50,7 @@ app.use(mongoSanitize({
 
 const sessionConfig = {
     name: 'session',
-    secret: 'thisshouldbeabettersecret!',
+    secret: process.env.SESSION_SECRET || 'thisshouldbeabettersecret!',
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -133,6 +133,10 @@ app.use('/campgrounds/:id/reviews', reviewRoutes)
 
 app.get('/', (req, res) => {
     res.render('home')
+});
+
+app.get('/healthz', (req, res) => {
+    res.status(200).json({ status: 'ok', db: mongoose.connection.readyState === 1 });
 });
 
 

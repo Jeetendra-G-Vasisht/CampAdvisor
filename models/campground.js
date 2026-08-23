@@ -42,7 +42,11 @@ const CampgroundSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'Review'
         }
-    ]
+    ],
+    embedding: {
+        type: [Number],
+        select: false
+    }
 }, opts);
 
 

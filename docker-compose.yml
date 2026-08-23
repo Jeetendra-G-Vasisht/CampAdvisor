@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DB_URL: mongodb://mongo:27017/yelpcamp
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_KEY: ${CLOUDINARY_KEY:-}
+      CLOUDINARY_SECRET: ${CLOUDINARY_SECRET:-}
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  mongo-data:
